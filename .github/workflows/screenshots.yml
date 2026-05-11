@@ -8,7 +8,7 @@ jobs:
     runs-on: macos-latest
 
     steps:
-    - uses: actions/checkout@v6
+    - uses: actions/checkout@v4
 
     - name: Select Xcode
       run: |
@@ -59,24 +59,24 @@ jobs:
 
         # Also try xcresulttool export
         for ref in $(xcrun xcresulttool get --format json --path TestResults.xcresult 2>/dev/null | python3 -c "
-import sys, json
-try:
-    data = json.load(sys.stdin)
-    def find_attachments(obj):
-        if isinstance(obj, dict):
-            if obj.get('_type', {}).get('_name') == 'ActionTestAttachment':
-                ref = obj.get('payloadRef', {}).get('id', {}).get('_value', '')
-                name = obj.get('name', {}).get('_value', 'screenshot')
-                if ref:
-                    print(f'{ref}|{name}')
-            for v in obj.values():
-                find_attachments(v)
-        elif isinstance(obj, list):
-            for item in obj:
-                find_attachments(item)
-    find_attachments(data)
-except: pass
-" 2>/dev/null); do
+        import sys, json
+        try:
+            data = json.load(sys.stdin)
+            def find_attachments(obj):
+                if isinstance(obj, dict):
+                    if obj.get('_type', {}).get('_name') == 'ActionTestAttachment':
+                        ref = obj.get('payloadRef', {}).get('id', {}).get('_value', '')
+                        name = obj.get('name', {}).get('_value', 'screenshot')
+                        if ref:
+                            print(f'{ref}|{name}')
+                    for v in obj.values():
+                        find_attachments(v)
+                elif isinstance(obj, list):
+                    for item in obj:
+                        find_attachments(item)
+            find_attachments(data)
+        except: pass
+        " 2>/dev/null); do
           REF=$(echo "$ref" | cut -d'|' -f1)
           NAME=$(echo "$ref" | cut -d'|' -f2)
           xcrun xcresulttool export --type file --path TestResults.xcresult --id "$REF" --output-path "../screenshots/${NAME}.png" 2>/dev/null || true
