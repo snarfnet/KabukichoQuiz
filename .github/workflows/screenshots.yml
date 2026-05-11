@@ -116,7 +116,7 @@ jobs:
             else:
                 sys.exit(1)
         " 2>/dev/null; then
-              INDEX=$(ls ../screenshots/*.png 2>/dev/null | wc -l)
+              INDEX=$(ls ../screenshots/*.png 2>/dev/null | wc -l | tr -d ' ')
               cp "$blob" "../screenshots/screenshot_${INDEX}.png"
               echo "Found PNG blob: $blob -> screenshot_${INDEX}.png"
             fi

@@ -143,6 +143,7 @@ struct CharacterCard: View {
             }
         }
         .disabled(!isUnlocked)
+        .accessibilityIdentifier(character.name)
     }
 
     private var difficultyColor: Color {
