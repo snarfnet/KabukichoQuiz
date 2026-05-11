@@ -23,12 +23,20 @@ jobs:
         fi
         xcodebuild -version
 
+    - name: Install XcodeGen
+      run: brew install xcodegen
+
     - name: Set build number
       run: |
         BUILD_NUM=$(( ${{ github.run_number }} + 0 ))
         echo "BUILD_NUM=$BUILD_NUM" >> $GITHUB_ENV
         cd NazoNazo
-        sed -i "" "s/CURRENT_PROJECT_VERSION = [0-9]*/CURRENT_PROJECT_VERSION = $BUILD_NUM/" NazoNazo.xcodeproj/project.pbxproj
+        sed -i "" "s/CURRENT_PROJECT_VERSION: [0-9]*/CURRENT_PROJECT_VERSION: $BUILD_NUM/" project.yml
+
+    - name: Generate Xcode project
+      run: |
+        cd NazoNazo
+        xcodegen generate
 
     - name: Import Distribution Certificate
       env:
@@ -52,6 +60,13 @@ jobs:
         mkdir -p ~/.appstoreconnect/private_keys
         echo "$ASC_API_KEY_CONTENT" | base64 -D > ~/.appstoreconnect/private_keys/AuthKey_WDXGY9WX55.p8
         cp ~/.appstoreconnect/private_keys/AuthKey_WDXGY9WX55.p8 /tmp/asc_key.p8
+
+    - name: Resolve SPM packages
+      run: |
+        cd NazoNazo
+        xcodebuild -resolvePackageDependencies \
+          -project NazoNazo.xcodeproj \
+          -scheme NazoNazo
 
     - name: Build Archive
       run: |

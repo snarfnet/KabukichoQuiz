@@ -4,11 +4,13 @@ struct HomeView: View {
     @EnvironmentObject var gameManager: GameManager
 
     var body: some View {
-        switch gameManager.gamePhase {
-        case .home:
-            CharacterSelectView()
-        case .quiz:
-            QuizView()
+        VStack(spacing: 0) {
+            switch gameManager.gamePhase {
+            case .home:
+                CharacterSelectView()
+            case .quiz:
+                QuizView()
+            }
         }
     }
 }

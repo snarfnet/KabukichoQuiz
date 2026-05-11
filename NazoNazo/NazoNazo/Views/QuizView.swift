@@ -13,12 +13,19 @@ struct QuizView: View {
             Color.black.opacity(0.3)
                 .ignoresSafeArea()
 
-            if gameManager.isLoading {
-                LoadingView()
-            } else if gameManager.showResult {
-                ResultView()
-            } else if let question = gameManager.currentQuestion {
-                QuestionView(question: question)
+            VStack(spacing: 0) {
+                if gameManager.isLoading {
+                    Spacer()
+                    LoadingView()
+                    Spacer()
+                } else if gameManager.showResult {
+                    ResultView()
+                } else if let question = gameManager.currentQuestion {
+                    QuestionView(question: question)
+                }
+
+                BannerAdView()
+                    .frame(height: 50)
             }
         }
     }

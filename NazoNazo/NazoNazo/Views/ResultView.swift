@@ -2,6 +2,7 @@ import SwiftUI
 
 struct ResultView: View {
     @EnvironmentObject var gameManager: GameManager
+    @StateObject private var adManager = AdManager.shared
 
     var body: some View {
         VStack(spacing: 24) {
@@ -108,6 +109,12 @@ struct ResultView: View {
             }
             .padding(.horizontal, 24)
             .padding(.bottom, 40)
+        }
+        .onAppear {
+            if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+               let rootVC = windowScene.windows.first?.rootViewController {
+                adManager.showInterstitialIfReady(from: rootVC)
+            }
         }
     }
 
