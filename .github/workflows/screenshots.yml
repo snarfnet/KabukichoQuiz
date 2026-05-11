@@ -51,38 +51,139 @@ jobs:
       run: |
         mkdir -p screenshots
         cd NazoNazo
-        # Extract attachments from xcresult
-        xcrun xcresulttool get --format json --path TestResults.xcresult > result.json 2>/dev/null || true
 
-        # Find and export screenshot attachments
-        find TestResults.xcresult -name "*.png" -exec cp {} ../screenshots/ \; 2>/dev/null || true
+        echo "=== xcresulttool version ==="
+        xcrun xcresulttool version 2>&1 || true
 
-        # Also try xcresulttool export
-        for ref in $(xcrun xcresulttool get --format json --path TestResults.xcresult 2>/dev/null | python3 -c "
-        import sys, json
-        try:
-            data = json.load(sys.stdin)
-            def find_attachments(obj):
-                if isinstance(obj, dict):
-                    if obj.get('_type', {}).get('_name') == 'ActionTestAttachment':
-                        ref = obj.get('payloadRef', {}).get('id', {}).get('_value', '')
-                        name = obj.get('name', {}).get('_value', 'screenshot')
-                        if ref:
-                            print(f'{ref}|{name}')
-                    for v in obj.values():
-                        find_attachments(v)
-                elif isinstance(obj, list):
-                    for item in obj:
-                        find_attachments(item)
-            find_attachments(data)
-        except: pass
-        " 2>/dev/null); do
-          REF=$(echo "$ref" | cut -d'|' -f1)
-          NAME=$(echo "$ref" | cut -d'|' -f2)
-          xcrun xcresulttool export --type file --path TestResults.xcresult --id "$REF" --output-path "../screenshots/${NAME}.png" 2>/dev/null || true
-        done
+        echo "=== Listing xcresult contents ==="
+        find TestResults.xcresult -type f 2>/dev/null | head -50
 
+        echo "=== Trying xcresulttool get test-results ==="
+        xcrun xcresulttool get test-results tests --path TestResults.xcresult 2>/dev/null > /tmp/tests.json || true
+
+        echo "=== Trying xcresulttool get object ==="
+        xcrun xcresulttool get --path TestResults.xcresult --format json 2>/dev/null > /tmp/result.json || true
+
+        # Method 1: Use xcresulttool to enumerate and export attachments
+        python3 << 'PYEOF'
+        import json, subprocess, os, sys
+
+        def try_new_format():
+            """Try Xcode 16+ xcresulttool format"""
+            try:
+                result = subprocess.run(
+                    ['xcrun', 'xcresulttool', 'get', 'test-results', 'tests', '--path', 'TestResults.xcresult'],
+                    capture_output=True, text=True
+                )
+                if result.returncode == 0:
+                    data = json.loads(result.stdout)
+                    print(f"New format data keys: {list(data.keys()) if isinstance(data, dict) else type(data)}", file=sys.stderr)
+                    return data
+            except Exception as e:
+                print(f"New format failed: {e}", file=sys.stderr)
+            return None
+
+        def try_legacy_format():
+            """Try legacy xcresulttool format"""
+            try:
+                result = subprocess.run(
+                    ['xcrun', 'xcresulttool', 'get', '--path', 'TestResults.xcresult', '--format', 'json'],
+                    capture_output=True, text=True
+                )
+                if result.returncode == 0:
+                    return json.loads(result.stdout)
+            except Exception as e:
+                print(f"Legacy format failed: {e}", file=sys.stderr)
+            return None
+
+        def find_attachment_refs(obj, refs=None):
+            if refs is None:
+                refs = []
+            if isinstance(obj, dict):
+                type_name = obj.get('_type', {}).get('_name', '')
+                if type_name == 'ActionTestAttachment':
+                    ref_id = obj.get('payloadRef', {}).get('id', {}).get('_value', '')
+                    name = obj.get('name', {}).get('_value', 'screenshot')
+                    if ref_id:
+                        refs.append((ref_id, name))
+                        print(f"Found attachment: {name} -> {ref_id}", file=sys.stderr)
+                for v in obj.values():
+                    find_attachment_refs(v, refs)
+            elif isinstance(obj, list):
+                for item in obj:
+                    find_attachment_refs(item, refs)
+            return refs
+
+        def export_attachment(ref_id, name, output_dir):
+            output_path = os.path.join(output_dir, f"{name}.png")
+            # Try new export syntax
+            result = subprocess.run(
+                ['xcrun', 'xcresulttool', 'export', '--path', 'TestResults.xcresult',
+                 '--id', ref_id, '--output-path', output_path, '--type', 'file'],
+                capture_output=True, text=True
+            )
+            if result.returncode == 0 and os.path.exists(output_path):
+                print(f"Exported: {output_path} ({os.path.getsize(output_path)} bytes)")
+                return True
+            # Try alternate syntax
+            result = subprocess.run(
+                ['xcrun', 'xcresulttool', 'get', '--path', 'TestResults.xcresult',
+                 '--id', ref_id],
+                capture_output=True
+            )
+            if result.returncode == 0 and result.stdout:
+                with open(output_path, 'wb') as f:
+                    f.write(result.stdout)
+                print(f"Exported (get): {output_path} ({os.path.getsize(output_path)} bytes)")
+                return True
+            print(f"Failed to export {name}: {result.stderr}", file=sys.stderr)
+            return False
+
+        output_dir = "../screenshots"
+
+        # Try legacy format first (has attachment refs)
+        data = try_legacy_format()
+        if data:
+            refs = find_attachment_refs(data)
+            if refs:
+                for ref_id, name in refs:
+                    export_attachment(ref_id, name, output_dir)
+            else:
+                print("No attachment refs found in legacy format", file=sys.stderr)
+                # Dump structure for debugging
+                print(json.dumps(data, indent=2)[:3000], file=sys.stderr)
+
+        # Try new format
+        new_data = try_new_format()
+        if new_data:
+            # New format might have different structure
+            print(json.dumps(new_data, indent=2)[:3000], file=sys.stderr)
+        PYEOF
+
+        # Method 2: Try simscreen / screenshots from simulator directly
+        echo "=== Checking screenshots directory ==="
         ls -la ../screenshots/ || echo "No screenshots found"
+
+        # Method 3: If no screenshots extracted, take them via simctl
+        if [ ! -f ../screenshots/01_home.png ]; then
+          echo "=== Falling back to simctl screenshots ==="
+          BOOTED_DEVICE=$(xcrun simctl list devices booted -j | python3 -c "
+        import json,sys
+        data=json.load(sys.stdin)
+        for runtime,devices in data.get('devices',{}).items():
+            for d in devices:
+                if d.get('state')=='Booted':
+                    print(d['udid'])
+                    sys.exit(0)
+        " 2>/dev/null)
+          if [ -n "$BOOTED_DEVICE" ]; then
+            echo "Found booted device: $BOOTED_DEVICE"
+            xcrun simctl io "$BOOTED_DEVICE" screenshot ../screenshots/01_home.png 2>/dev/null || true
+          fi
+        fi
+
+        echo "=== Final screenshots ==="
+        ls -la ../screenshots/
 
     - name: Upload Screenshots
       uses: actions/upload-artifact@v4
