@@ -10,14 +10,20 @@ class TranslationService {
 
         do {
             if session == nil {
-                let config = TranslationSession.Configuration(
-                    source: .init(identifier: "en"),
-                    target: .init(identifier: "ja")
-                )
-                session = try await TranslationSession(configuration: config)
+                if #available(iOS 18.0, *) {
+                    session = try await TranslationSession(
+                        installedSource: Locale.Language(identifier: "en"),
+                        target: Locale.Language(identifier: "ja")
+                    )
+                } else {
+                    return text
+                }
             }
-            let response = try await session!.translate(text)
-            return response.targetText
+            if #available(iOS 18.0, *) {
+                let response = try await session!.translate(text)
+                return response.targetText
+            }
+            return text
         } catch {
             return text
         }

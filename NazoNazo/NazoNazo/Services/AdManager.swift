@@ -6,7 +6,7 @@ class AdManager: NSObject, ObservableObject {
     static let bannerAdUnitID = "ca-app-pub-9404799280370656/3314931225"
     static let interstitialAdUnitID = "ca-app-pub-9404799280370656/6583258245"
 
-    @Published var interstitialAd: GADInterstitialAd?
+    @Published var interstitialAd: InterstitialAd?
     private var showCount = 0
 
     override init() {
@@ -15,7 +15,7 @@ class AdManager: NSObject, ObservableObject {
     }
 
     func loadInterstitial() {
-        GADInterstitialAd.load(withAdUnitID: Self.interstitialAdUnitID, request: GADRequest()) { [weak self] ad, error in
+        InterstitialAd.load(withAdUnitID: Self.interstitialAdUnitID, request: Request()) { [weak self] ad, error in
             if let error = error {
                 print("Interstitial load error: \(error.localizedDescription)")
                 return
@@ -33,16 +33,16 @@ class AdManager: NSObject, ObservableObject {
 }
 
 struct BannerAdView: UIViewRepresentable {
-    func makeUIView(context: Context) -> GADBannerView {
-        let banner = GADBannerView(adSize: GADAdSizeBanner)
+    func makeUIView(context: Context) -> BannerView {
+        let banner = BannerView(adSize: AdSizeBanner)
         banner.adUnitID = AdManager.bannerAdUnitID
         if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
            let rootVC = windowScene.windows.first?.rootViewController {
             banner.rootViewController = rootVC
         }
-        banner.load(GADRequest())
+        banner.load(Request())
         return banner
     }
 
-    func updateUIView(_ uiView: GADBannerView, context: Context) {}
+    func updateUIView(_ uiView: BannerView, context: Context) {}
 }
