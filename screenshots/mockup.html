@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { background: #000; font-family: -apple-system, 'Hiragino Sans', sans-serif; }
+
+.phone-frame {
+  width: 1290px;
+  height: 2796px;
+  position: relative;
+  overflow: hidden;
+  display: inline-block;
+  margin: 20px;
+}
+
+/* Screen 1: Home / Character Select */
+.screen-home {
+  width: 100%; height: 100%;
+  background: url('../Assets/UI/splash_background.png') center/cover;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.screen-home::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.4);
+}
+.screen-home > * { position: relative; z-index: 1; }
+
+.title-line1 {
+  font-size: 100px;
+  font-weight: 900;
+  background: linear-gradient(90deg, #ff69b4, #9b59b6);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-shadow: none;
+  filter: drop-shadow(0 0 30px rgba(255,105,180,0.8));
+  margin-top: 180px;
+}
+.title-line2 {
+  font-size: 86px;
+  font-weight: 900;
+  background: linear-gradient(90deg, #9b59b6, #ff69b4);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 0 30px rgba(155,89,182,0.8));
+  margin-bottom: 80px;
+}
+.subtitle {
+  font-size: 42px;
+  color: rgba(255,255,255,0.7);
+  margin-bottom: 60px;
+}
+
+.characters {
+  display: flex;
+  gap: 48px;
+  justify-content: center;
+}
+.char-card {
+  text-align: center;
+}
+.char-card img {
+  width: 310px;
+  height: 434px;
+  object-fit: cover;
+  border-radius: 36px;
+  border: 3px solid rgba(155,89,182,0.5);
+}
+.char-card.locked img {
+  filter: brightness(0.3);
+}
+.char-card .name {
+  font-size: 42px;
+  font-weight: bold;
+  color: #fff;
+  margin-top: 24px;
+}
+.char-card .diff {
+  font-size: 34px;
+  font-weight: 600;
+  padding: 8px 30px;
+  border-radius: 50px;
+  display: inline-block;
+  margin-top: 12px;
+}
+.diff-easy { color: #ff69b4; background: rgba(255,105,180,0.2); }
+.diff-medium { color: #9b59b6; background: rgba(155,89,182,0.2); }
+.diff-hard { color: #ff2d55; background: rgba(255,45,85,0.2); }
+
+.lock-icon {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 80px;
+  color: #888;
+}
+.char-img-wrap {
+  position: relative;
+  display: inline-block;
+}
+
+/* Screen 2: Quiz */
+.screen-quiz {
+  width: 100%; height: 100%;
+  background: url('../Assets/UI/background_quiz.png') center/cover;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+.screen-quiz::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.3);
+}
+.screen-quiz > * { position: relative; z-index: 1; }
+
+.quiz-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 70px 60px 30px;
+  color: rgba(255,255,255,0.8);
+  font-size: 42px;
+  font-weight: bold;
+}
+.quiz-score { color: #ff69b4; }
+
+.progress-bar {
+  margin: 0 60px 40px;
+  height: 18px;
+  background: rgba(255,255,255,0.15);
+  border-radius: 9px;
+  overflow: hidden;
+}
+.progress-fill {
+  width: 40%;
+  height: 100%;
+  background: linear-gradient(90deg, #ff69b4, #9b59b6);
+  border-radius: 9px;
+}
+
+.quiz-char-area {
+  display: flex;
+  align-items: flex-end;
+  gap: 30px;
+  padding: 0 60px;
+  margin-bottom: 40px;
+}
+.quiz-char-area img {
+  width: 210px;
+  height: 294px;
+  object-fit: cover;
+  border-radius: 30px;
+}
+.speech-bubble {
+  font-size: 40px;
+  color: rgba(255,255,255,0.9);
+  background: rgba(255,255,255,0.1);
+  padding: 30px;
+  border-radius: 30px;
+}
+
+.question-box {
+  margin: 0 48px;
+  padding: 60px;
+  background: rgba(255,255,255,0.08);
+  border-radius: 48px;
+  text-align: center;
+}
+.question-text {
+  font-size: 54px;
+  font-weight: 600;
+  color: #fff;
+  line-height: 1.5;
+}
+
+.answers {
+  padding: 50px 48px;
+  display: flex;
+  flex-direction: column;
+  gap: 36px;
+}
+.answer-btn {
+  padding: 42px 54px;
+  background: rgba(255,255,255,0.08);
+  border: 2px solid rgba(155,89,182,0.3);
+  border-radius: 42px;
+  font-size: 46px;
+  color: #fff;
+  font-weight: 500;
+}
+.answer-btn.correct {
+  background: rgba(0,255,127,0.2);
+  border-color: rgba(0,255,127,0.6);
+}
+.answer-btn.correct::after {
+  content: ' ✓';
+  color: #00ff7f;
+}
+
+/* Screen 3: Greeting */
+.screen-greeting {
+  width: 100%; height: 100%;
+  background: url('../Assets/UI/splash_background.png') center/cover;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.screen-greeting::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.7);
+}
+.greeting-card {
+  position: relative;
+  z-index: 1;
+  background: rgba(16,8,24,0.95);
+  border: 1px solid rgba(155,89,182,0.4);
+  border-radius: 60px;
+  padding: 90px 60px;
+  text-align: center;
+  width: 960px;
+}
+.greeting-card img {
+  width: 450px;
+  height: 630px;
+  object-fit: cover;
+  border-radius: 48px;
+  box-shadow: 0 0 40px rgba(255,105,180,0.5);
+}
+.greeting-name {
+  font-size: 66px;
+  font-weight: bold;
+  color: #fff;
+  margin-top: 40px;
+}
+.greeting-text {
+  font-size: 46px;
+  color: rgba(255,255,255,0.9);
+  margin-top: 30px;
+  line-height: 1.6;
+}
+.start-btn {
+  margin-top: 50px;
+  display: inline-block;
+  padding: 42px 120px;
+  background: linear-gradient(90deg, #ff69b4, #9b59b6);
+  border-radius: 75px;
+  font-size: 50px;
+  font-weight: bold;
+  color: #fff;
+  box-shadow: 0 0 30px rgba(255,105,180,0.5);
+}
+
+/* Screen 4: Result */
+.screen-result {
+  width: 100%; height: 100%;
+  background: url('../Assets/UI/background_quiz.png') center/cover;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+.screen-result::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.3);
+}
+.screen-result > * { position: relative; z-index: 1; }
+.result-img {
+  width: 480px;
+  height: 672px;
+  object-fit: cover;
+  border-radius: 48px;
+  box-shadow: 0 0 40px rgba(255,105,180,0.5);
+}
+.result-name {
+  font-size: 60px;
+  font-weight: bold;
+  color: #fff;
+  margin-top: 40px;
+}
+.result-score {
+  font-size: 150px;
+  font-weight: 900;
+  font-family: monospace;
+  background: linear-gradient(90deg, #ff69b4, #9b59b6);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 0 20px rgba(255,105,180,0.6));
+  margin-top: 20px;
+}
+.result-clear {
+  font-size: 66px;
+  font-weight: bold;
+  color: #ff69b4;
+  margin-top: 10px;
+}
+.result-msg {
+  font-size: 46px;
+  color: rgba(255,255,255,0.9);
+  text-align: center;
+  margin: 30px 60px;
+  padding: 40px;
+  background: rgba(255,255,255,0.08);
+  border-radius: 36px;
+}
+.result-unlock {
+  font-size: 42px;
+  color: #ffd700;
+  background: rgba(255,215,0,0.15);
+  padding: 20px 50px;
+  border-radius: 50px;
+  margin-top: 20px;
+}
+.home-btn {
+  margin-top: 40px;
+  padding: 42px 200px;
+  background: rgba(255,255,255,0.1);
+  border: 1px solid rgba(155,89,182,0.4);
+  border-radius: 75px;
+  font-size: 50px;
+  font-weight: bold;
+  color: rgba(255,255,255,0.8);
+}
+</style>
+</head>
+<body>
+
+<!-- Screen 1: Home -->
+<div class="phone-frame" id="screen1">
+  <div class="screen-home">
+    <div class="title-line1">私のなぞなぞ</div>
+    <div class="title-line2">解けるかなぁ！？</div>
+    <div class="subtitle">- 女の子を選んでね -</div>
+    <div class="characters">
+      <div class="char-card">
+        <div class="char-img-wrap">
+          <img src="../Assets/Characters/easy_character.png">
+        </div>
+        <div class="name">りりあ</div>
+        <div class="diff diff-easy">Easy</div>
+      </div>
+      <div class="char-card locked">
+        <div class="char-img-wrap">
+          <img src="../Assets/Characters/medium_character.png">
+          <div class="lock-icon">🔒</div>
+        </div>
+        <div class="name" style="color:#888">みれい</div>
+        <div class="diff diff-medium">Medium</div>
+      </div>
+      <div class="char-card locked">
+        <div class="char-img-wrap">
+          <img src="../Assets/Characters/hard_character.png">
+          <div class="lock-icon">🔒</div>
+        </div>
+        <div class="name" style="color:#888">ねむ</div>
+        <div class="diff diff-hard">Hard</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Screen 2: Quiz -->
+<div class="phone-frame" id="screen2">
+  <div class="screen-quiz">
+    <div class="quiz-header">
+      <span>✕</span>
+      <span>4 / 10</span>
+      <span class="quiz-score">正解: 3</span>
+    </div>
+    <div class="progress-bar"><div class="progress-fill"></div></div>
+    <div class="quiz-char-area">
+      <img src="../Assets/Characters/easy_character.png">
+      <div class="speech-bubble">えらい、ちゃんと見てたんだね。</div>
+    </div>
+    <div class="question-box">
+      <div class="question-text">太陽系で最も大きい惑星はどれ？</div>
+    </div>
+    <div class="answers">
+      <div class="answer-btn correct">木星</div>
+      <div class="answer-btn">土星</div>
+      <div class="answer-btn">海王星</div>
+      <div class="answer-btn">天王星</div>
+    </div>
+  </div>
+</div>
+
+<!-- Screen 3: Greeting -->
+<div class="phone-frame" id="screen3">
+  <div class="screen-greeting">
+    <div class="greeting-card">
+      <img src="../Assets/Characters/medium_character.png">
+      <div class="greeting-name">みれい</div>
+      <div class="greeting-text">これくらい、当然わかるよね？</div>
+      <div class="start-btn">クイズを始める</div>
+    </div>
+  </div>
+</div>
+
+<!-- Screen 4: Result -->
+<div class="phone-frame" id="screen4">
+  <div class="screen-result">
+    <img class="result-img" src="../Assets/Characters/hard_character.png">
+    <div class="result-name">ねむ</div>
+    <div class="result-score">8 / 10</div>
+    <div class="result-clear">クリア！</div>
+    <div class="result-msg">全部正解...ずっと一緒にいてくれるよね？</div>
+    <div class="home-btn">ホームに戻る</div>
+  </div>
+</div>
+
+</body>
+</html>

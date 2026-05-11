@@ -1,0 +1,92 @@
+name: Take Screenshots
+
+on:
+  workflow_dispatch:
+
+jobs:
+  screenshots:
+    runs-on: macos-latest
+
+    steps:
+    - uses: actions/checkout@v6
+
+    - name: Select Xcode
+      run: |
+        XCODE_APP=$(ls /Applications/ | grep -E "^Xcode_2[6-9]|^Xcode_[3-9][0-9]" | sort -V | tail -1)
+        if [ -n "$XCODE_APP" ]; then
+          sudo xcode-select -s "/Applications/$XCODE_APP"
+        else
+          XCODE_APP=$(ls /Applications/ | grep "^Xcode_" | sort -V | tail -1)
+          sudo xcode-select -s "/Applications/$XCODE_APP"
+        fi
+        xcodebuild -version
+
+    - name: Install XcodeGen
+      run: brew install xcodegen
+
+    - name: Generate Xcode project
+      run: |
+        cd NazoNazo
+        xcodegen generate
+
+    - name: Resolve SPM packages
+      run: |
+        cd NazoNazo
+        xcodebuild -resolvePackageDependencies \
+          -project NazoNazo.xcodeproj \
+          -scheme NazoNazo
+
+    - name: Run UI Tests for Screenshots
+      run: |
+        cd NazoNazo
+        xcodebuild test \
+          -project NazoNazo.xcodeproj \
+          -scheme NazoNazoUITests \
+          -destination "platform=iOS Simulator,name=iPhone 16 Pro Max" \
+          -resultBundlePath TestResults.xcresult \
+          CODE_SIGN_STYLE=Automatic \
+          DEVELOPMENT_TEAM=83VGKGSQUH || true
+
+    - name: Extract Screenshots
+      run: |
+        mkdir -p screenshots
+        cd NazoNazo
+        # Extract attachments from xcresult
+        xcrun xcresulttool get --format json --path TestResults.xcresult > result.json 2>/dev/null || true
+
+        # Find and export screenshot attachments
+        find TestResults.xcresult -name "*.png" -exec cp {} ../screenshots/ \; 2>/dev/null || true
+
+        # Also try xcresulttool export
+        for ref in $(xcrun xcresulttool get --format json --path TestResults.xcresult 2>/dev/null | python3 -c "
+import sys, json
+try:
+    data = json.load(sys.stdin)
+    def find_attachments(obj):
+        if isinstance(obj, dict):
+            if obj.get('_type', {}).get('_name') == 'ActionTestAttachment':
+                ref = obj.get('payloadRef', {}).get('id', {}).get('_value', '')
+                name = obj.get('name', {}).get('_value', 'screenshot')
+                if ref:
+                    print(f'{ref}|{name}')
+            for v in obj.values():
+                find_attachments(v)
+        elif isinstance(obj, list):
+            for item in obj:
+                find_attachments(item)
+    find_attachments(data)
+except: pass
+" 2>/dev/null); do
+          REF=$(echo "$ref" | cut -d'|' -f1)
+          NAME=$(echo "$ref" | cut -d'|' -f2)
+          xcrun xcresulttool export --type file --path TestResults.xcresult --id "$REF" --output-path "../screenshots/${NAME}.png" 2>/dev/null || true
+        done
+
+        ls -la ../screenshots/ || echo "No screenshots found"
+
+    - name: Upload Screenshots
+      uses: actions/upload-artifact@v4
+      with:
+        name: app-screenshots
+        path: screenshots/
+        retention-days: 30

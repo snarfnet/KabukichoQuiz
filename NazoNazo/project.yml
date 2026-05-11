@@ -36,3 +36,17 @@ targets:
         INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad: "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown"
     dependencies:
       - package: GoogleMobileAds
+
+  NazoNazoUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources:
+      - NazoNazoUITests
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.snarfnet.nazonazo.uitests
+        CODE_SIGN_STYLE: Automatic
+        DEVELOPMENT_TEAM: 83VGKGSQUH
+        SWIFT_VERSION: "5.0"
+    dependencies:
+      - target: NazoNazo
