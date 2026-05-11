@@ -3,7 +3,7 @@ import Translation
 
 @MainActor
 class TranslationService {
-    private var session: TranslationSession?
+    private var session: Any?
 
     func translate(_ text: String) async -> String {
         guard !text.isEmpty else { return text }
@@ -11,12 +11,14 @@ class TranslationService {
         if #available(iOS 26.0, *) {
             do {
                 if session == nil {
-                    session = try await TranslationSession(
+                    let s = try await TranslationSession(
                         installedSource: Locale.Language(identifier: "en"),
                         target: Locale.Language(identifier: "ja")
                     )
+                    session = s
                 }
-                let response = try await session!.translate(text)
+                let s = session as! TranslationSession
+                let response = try await s.translate(text)
                 return response.targetText
             } catch {
                 return text
