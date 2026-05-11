@@ -1,0 +1,33 @@
+{
+  "agents": [
+    {
+      "agent_id": "a1e40efe7cb3e98a3",
+      "agent_type": "codex:codex-rescue",
+      "started_at": "2026-05-11T11:26:35.273Z",
+      "parent_mode": "none",
+      "status": "completed",
+      "completed_at": "2026-05-11T11:33:12.842Z",
+      "duration_ms": 397569
+    },
+    {
+      "agent_id": "ac94fa8aaac0f710b",
+      "agent_type": "codex:codex-rescue",
+      "started_at": "2026-05-11T11:33:27.632Z",
+      "parent_mode": "none",
+      "status": "completed",
+      "completed_at": "2026-05-11T11:38:53.563Z",
+      "duration_ms": 325931
+    },
+    {
+      "agent_id": "a3d70aa9f478f587b",
+      "agent_type": "codex:codex-rescue",
+      "started_at": "2026-05-11T11:39:23.957Z",
+      "parent_mode": "none",
+      "status": "running"
+    }
+  ],
+  "total_spawned": 3,
+  "total_completed": 2,
+  "total_failed": 0,
+  "last_updated": "2026-05-11T11:39:24.072Z"
+}

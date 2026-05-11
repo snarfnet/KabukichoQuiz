@@ -1,0 +1,9 @@
+{
+  "scripts": {
+    "generate:assets": "node generate_assets.js"
+  },
+  "dependencies": {
+    "node-fetch": "latest",
+    "openai": "latest"
+  }
+}
