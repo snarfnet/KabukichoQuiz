@@ -1,5 +1,0 @@
-{"t":0,"agent":"a1e40ef","agent_type":"codex:codex-rescue","event":"agent_start","parent_mode":"none"}
-{"t":0,"agent":"a1e40ef","agent_type":"codex:codex-rescue","event":"agent_stop","success":true,"duration_ms":397569}
-{"t":0,"agent":"ac94fa8","agent_type":"codex:codex-rescue","event":"agent_start","parent_mode":"none"}
-{"t":0,"agent":"ac94fa8","agent_type":"codex:codex-rescue","event":"agent_stop","success":true,"duration_ms":325931}
-{"t":0,"agent":"a3d70aa","agent_type":"codex:codex-rescue","event":"agent_start","parent_mode":"none"}
