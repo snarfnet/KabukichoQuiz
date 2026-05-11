@@ -15,7 +15,7 @@ class GameManager: ObservableObject {
     @Published var gamePhase: GamePhase = .home
 
     private let triviaService = TriviaService()
-    private let translationService = TranslationService()
+    private let translationService = TranslationServiceWrapper()
 
     var currentQuestion: Question? {
         guard currentQuestionIndex < questions.count else { return nil }

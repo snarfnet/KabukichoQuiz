@@ -15,7 +15,7 @@ class AdManager: NSObject, ObservableObject {
     }
 
     func loadInterstitial() {
-        InterstitialAd.load(withAdUnitID: Self.interstitialAdUnitID, request: Request()) { [weak self] ad, error in
+        InterstitialAd.load(with: Self.interstitialAdUnitID, request: Request()) { [weak self] ad, error in
             if let error = error {
                 print("Interstitial load error: \(error.localizedDescription)")
                 return
@@ -27,7 +27,7 @@ class AdManager: NSObject, ObservableObject {
     func showInterstitialIfReady(from rootViewController: UIViewController) {
         showCount += 1
         guard showCount % 3 == 0, let ad = interstitialAd else { return }
-        ad.present(fromRootViewController: rootViewController)
+        ad.present(from: rootViewController)
         loadInterstitial()
     }
 }
