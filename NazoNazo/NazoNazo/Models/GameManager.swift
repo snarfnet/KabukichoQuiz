@@ -46,18 +46,37 @@ class GameManager: ObservableObject {
         isLoading = true
         gamePhase = .quiz
 
-        do {
-            let triviaQuestions = try await triviaService.fetchQuestions(
-                amount: difficulty.questionsPerRound,
-                difficulty: difficulty
-            )
-            questions = await translateQuestions(triviaQuestions)
-        } catch {
-            questions = []
+        if ProcessInfo.processInfo.arguments.contains("--uitesting") {
+            questions = Self.mockQuestions
+        } else {
+            do {
+                let triviaQuestions = try await triviaService.fetchQuestions(
+                    amount: difficulty.questionsPerRound,
+                    difficulty: difficulty
+                )
+                questions = await translateQuestions(triviaQuestions)
+            } catch {
+                questions = []
+            }
         }
 
         isLoading = false
     }
+
+    static let mockQuestions: [Question] = [
+        Question(text: "太陽系で最も大きい惑星はどれ？", answers: [
+            Answer(text: "木星", isCorrect: true),
+            Answer(text: "土星", isCorrect: false),
+            Answer(text: "海王星", isCorrect: false),
+            Answer(text: "天王星", isCorrect: false),
+        ], correctIndex: 0),
+        Question(text: "日本で一番高い山は？", answers: [
+            Answer(text: "北岳", isCorrect: false),
+            Answer(text: "富士山", isCorrect: true),
+            Answer(text: "槍ヶ岳", isCorrect: false),
+            Answer(text: "奥穂高岳", isCorrect: false),
+        ], correctIndex: 1),
+    ]
 
     func selectAnswer(_ answer: Answer) {
         guard !isAnswered else { return }
