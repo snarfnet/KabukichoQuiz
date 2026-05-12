@@ -36,8 +36,10 @@ struct BannerAdView: UIViewRepresentable {
     func makeUIView(context: Context) -> BannerView {
         let banner = BannerView(adSize: AdSizeBanner)
         banner.adUnitID = AdManager.bannerAdUnitID
-        if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
-           let rootVC = windowScene.windows.first?.rootViewController {
+        if let windowScene = UIApplication.shared.connectedScenes
+            .compactMap({ $0 as? UIWindowScene })
+            .first(where: { $0.activationState == .foregroundActive }),
+           let rootVC = windowScene.keyWindow?.rootViewController {
             banner.rootViewController = rootVC
         }
         banner.load(Request())
