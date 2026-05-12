@@ -30,27 +30,16 @@ struct CharacterSelectView: View {
             Color.black.opacity(0.4)
                 .ignoresSafeArea()
 
+            ScrollView {
             VStack(spacing: 0) {
                 Text("私のなぞなぞ")
                     .font(.system(size: 32, weight: .black))
-                    .foregroundStyle(
-                        LinearGradient(
-                            colors: [.pink, .purple],
-                            startPoint: .leading,
-                            endPoint: .trailing
-                        )
-                    )
+                    .foregroundColor(.pink)
                     .shadow(color: .pink.opacity(0.8), radius: 10)
 
                 Text("解けるかなぁ！？")
                     .font(.system(size: 28, weight: .black))
-                    .foregroundStyle(
-                        LinearGradient(
-                            colors: [.purple, .pink],
-                            startPoint: .leading,
-                            endPoint: .trailing
-                        )
-                    )
+                    .foregroundColor(.purple)
                     .shadow(color: .purple.opacity(0.8), radius: 10)
                     .padding(.bottom, 30)
 
@@ -78,6 +67,7 @@ struct CharacterSelectView: View {
                 Spacer()
             }
             .padding(.top, 60)
+            } // ScrollView
 
             if showGreeting, let character = selectedCharacter {
                 GreetingOverlay(character: character) {
