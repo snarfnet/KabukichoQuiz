@@ -13,17 +13,21 @@ class AppDelegate: NSObject, UIApplicationDelegate {
 struct NazoNazoApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     @StateObject private var gameManager = GameManager()
+    @Environment(\.scenePhase) private var scenePhase
 
     var body: some Scene {
         WindowGroup {
             HomeView()
                 .environmentObject(gameManager)
                 .preferredColorScheme(.dark)
-                .onAppear {
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-                        ATTrackingManager.requestTrackingAuthorization { _ in }
-                    }
+        }
+        .onChange(of: scenePhase) { _, newPhase in
+            if newPhase == .active {
+                guard ATTrackingManager.trackingAuthorizationStatus == .notDetermined else { return }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                    ATTrackingManager.requestTrackingAuthorization { _ in }
                 }
+            }
         }
     }
 }
