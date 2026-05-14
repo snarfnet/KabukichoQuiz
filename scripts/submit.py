@@ -1,9 +1,10 @@
-import jwt, time, requests, sys
+import jwt, time, requests, sys, os
 
 KEY_ID = 'WDXGY9WX55'
 ISSUER = '2be0734f-943a-4d61-9dc9-5d9045c46fec'
 APP_ID = '6768308891'
 BUILD_NUMBER = sys.argv[1]
+APP_VERSION = os.environ.get('APP_VERSION', '1.0')
 
 p8 = open('/tmp/asc_key.p8').read()
 
@@ -34,8 +35,8 @@ for i in range(80):
     time.sleep(30)
 
 if not build_id:
-    print('WARNING: Build not found after 40 minutes. Check ASC manually.')
-    sys.exit(0)
+    print('ERROR: Build not found after 40 minutes. Check ASC manually.')
+    sys.exit(1)
 
 # Set export compliance
 r = api('PATCH', f'/builds/{build_id}',
@@ -45,12 +46,12 @@ print(f'Export compliance: {r.status_code}')
 # Find version
 version_id = None
 version_state = None
-r = api('GET', f'/apps/{APP_ID}/appStoreVersions?filter[platform]=IOS&limit=1')
+r = api('GET', f'/apps/{APP_ID}/appStoreVersions?filter[platform]=IOS&filter[versionString]={APP_VERSION}&limit=1')
 data = r.json()
 if data.get('data'):
     version_id = data['data'][0]['id']
     version_state = data['data'][0]['attributes']['appStoreState']
-    print(f'Found version: {version_id} state={version_state}')
+    print(f'Found version {APP_VERSION}: {version_id} state={version_state}')
 
 if version_state in ('WAITING_FOR_REVIEW', 'IN_REVIEW'):
     print(f'Already in review ({version_state}). Nothing to do.')
@@ -61,7 +62,7 @@ if not version_id or version_state in ('READY_FOR_DISTRIBUTION',):
     r = api('POST', '/appStoreVersions', json={
         'data': {
             'type': 'appStoreVersions',
-            'attributes': {'platform': 'IOS', 'versionString': '1.0'},
+            'attributes': {'platform': 'IOS', 'versionString': APP_VERSION},
             'relationships': {'app': {'data': {'type': 'apps', 'id': APP_ID}}}
         }
     })
@@ -72,6 +73,34 @@ if not version_id or version_state in ('READY_FOR_DISTRIBUTION',):
     version_state = 'PREPARE_FOR_SUBMISSION'
 
 print(f'Version ID: {version_id} state={version_state}')
+
+# Set App Review Notes
+review_notes = """This build addresses the previous App Review rejection. It requests App Tracking Transparency permission after launch and includes a clear usage description for ad personalization.
+
+The app is a simple riddle and quiz game. Users choose a character, answer multiple-choice questions, see their score, and unlock the next character after clearing a round.
+
+No login or paid features are required. Google AdMob is used for banner and interstitial advertisements."""
+
+# Check/create appStoreReviewDetail
+r = api('GET', f'/appStoreVersions/{version_id}/appStoreReviewDetail')
+if r.status_code == 200 and r.json().get('data'):
+    detail_id = r.json()['data']['id']
+    r = api('PATCH', f'/appStoreReviewDetails/{detail_id}', json={
+        'data': {'type': 'appStoreReviewDetails', 'id': detail_id,
+                 'attributes': {'notes': review_notes}}
+    })
+    print(f'Review notes updated: {r.status_code}')
+else:
+    r = api('POST', '/appStoreReviewDetails', json={
+        'data': {
+            'type': 'appStoreReviewDetails',
+            'attributes': {'notes': review_notes},
+            'relationships': {
+                'appStoreVersion': {'data': {'type': 'appStoreVersions', 'id': version_id}}
+            }
+        }
+    })
+    print(f'Review notes created: {r.status_code}')
 
 # Assign build
 r = api('PATCH', f'/appStoreVersions/{version_id}/relationships/build',
@@ -93,12 +122,21 @@ for state_filter in ['UNRESOLVED_ISSUES', 'READY_FOR_REVIEW']:
             canceled_any = True
 
 if canceled_any:
-    print('Waiting 10s for cancellations to propagate...')
-    time.sleep(10)
+    print('Waiting 30s for cancellations to propagate...')
+    time.sleep(30)
+    r = api('GET', f'/apps/{APP_ID}/appStoreVersions?filter[platform]=IOS&filter[versionString]={APP_VERSION}&limit=1')
+    data = r.json()
+    if data.get('data'):
+        version_id = data['data'][0]['id']
+        version_state = data['data'][0]['attributes']['appStoreState']
+        print(f'Version after cancel: {version_id} state={version_state}')
+    r = api('PATCH', f'/appStoreVersions/{version_id}/relationships/build',
+        json={'data': {'type': 'builds', 'id': build_id}})
+    print(f'Build re-assigned: {r.status_code}')
 
 # Submit via reviewSubmissions API
 submission_id = None
-for attempt in range(3):
+for attempt in range(5):
     r = api('POST', '/reviewSubmissions', json={
         'data': {
             'type': 'reviewSubmissions',
@@ -109,24 +147,35 @@ for attempt in range(3):
         submission_id = r.json()['data']['id']
         print(f'ReviewSubmission created: {submission_id}')
         break
-    print(f'Create reviewSubmission attempt {attempt+1}/3 failed: {r.status_code} {r.text[:200]}')
-    if attempt < 2:
-        time.sleep(10)
+    print(f'Create reviewSubmission attempt {attempt+1}/5 failed: {r.status_code} {r.text[:200]}')
+    if attempt < 4:
+        time.sleep(15)
 
 if not submission_id:
-    print('Could not create reviewSubmission after 3 attempts.')
-    sys.exit(0)
+    print('Could not create reviewSubmission after 5 attempts.')
+    sys.exit(1)
 
-r = api('POST', '/reviewSubmissionItems', json={
-    'data': {
-        'type': 'reviewSubmissionItems',
-        'relationships': {
-            'reviewSubmission': {'data': {'type': 'reviewSubmissions', 'id': submission_id}},
-            'appStoreVersion': {'data': {'type': 'appStoreVersions', 'id': version_id}}
+item_added = False
+for attempt in range(5):
+    r = api('POST', '/reviewSubmissionItems', json={
+        'data': {
+            'type': 'reviewSubmissionItems',
+            'relationships': {
+                'reviewSubmission': {'data': {'type': 'reviewSubmissions', 'id': submission_id}},
+                'appStoreVersion': {'data': {'type': 'appStoreVersions', 'id': version_id}}
+            }
         }
-    }
-})
-print(f'Add item: {r.status_code}')
+    })
+    print(f'Add item attempt {attempt+1}/5: {r.status_code}')
+    if r.status_code == 201:
+        item_added = True
+        break
+    if attempt < 4:
+        time.sleep(15)
+
+if not item_added:
+    print(f'Failed to add item: {r.text[:300]}')
+    sys.exit(1)
 
 r = api('PATCH', f'/reviewSubmissions/{submission_id}', json={
     'data': {
@@ -140,3 +189,4 @@ if r.status_code == 200:
     print(f'Submitted! State: {state}')
 else:
     print(f'Submit failed: {r.status_code} {r.text[:300]}')
+    sys.exit(1)
