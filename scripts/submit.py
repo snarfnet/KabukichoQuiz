@@ -75,7 +75,9 @@ if not version_id or version_state in ('READY_FOR_DISTRIBUTION',):
 print(f'Version ID: {version_id} state={version_state}')
 
 # Set App Review Notes
-review_notes = """This build addresses the previous App Review rejection. It requests App Tracking Transparency permission after launch and includes a clear usage description for ad personalization.
+review_notes = """This build addresses the Guideline 4 rejection reported on iPhone 17 Pro Max and iPad Air 11-inch. Quiz, result, and character selection screens now use scrollable responsive layouts so long question text, answer choices, score text, and buttons remain visible and easy to interact with.
+
+It also keeps the previous ATT fix: the app requests App Tracking Transparency permission after launch and includes a clear usage description for ad personalization.
 
 The app is a simple riddle and quiz game. Users choose a character, answer multiple-choice questions, see their score, and unlock the next character after clearing a round.
 

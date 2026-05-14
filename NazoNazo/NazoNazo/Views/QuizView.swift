@@ -13,20 +13,21 @@ struct QuizView: View {
             Color.black.opacity(0.3)
                 .ignoresSafeArea()
 
-            VStack(spacing: 0) {
+            Group {
                 if gameManager.isLoading {
-                    Spacer()
                     LoadingView()
-                    Spacer()
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else if gameManager.showResult {
                     ResultView()
                 } else if let question = gameManager.currentQuestion {
                     QuestionView(question: question)
                 }
-
-                BannerAdView()
-                    .frame(height: 50)
             }
+        }
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            BannerAdView()
+                .frame(height: 50)
+                .background(Color.black.opacity(0.35))
         }
     }
 }
@@ -47,11 +48,14 @@ struct LoadingView: View {
             Text("問題を準備中\(dots)")
                 .font(.system(size: 18, weight: .medium))
                 .foregroundColor(.white)
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
 
             ProgressView()
                 .tint(.pink)
                 .scaleEffect(1.5)
         }
+        .padding(24)
         .onReceive(timer) { _ in
             dots = dots.count >= 3 ? "" : dots + "."
         }
@@ -63,148 +67,169 @@ struct QuestionView: View {
     let question: Question
 
     var body: some View {
-        VStack(spacing: 0) {
-            // Header
-            HStack {
-                Button(action: { gameManager.goHome() }) {
-                    Image(systemName: "xmark")
-                        .font(.title3)
-                        .foregroundColor(.white.opacity(0.7))
-                }
-
-                Spacer()
-
-                Text("\(gameManager.currentQuestionIndex + 1) / \(gameManager.questions.count)")
-                    .font(.system(size: 14, weight: .bold, design: .monospaced))
-                    .foregroundColor(.white.opacity(0.8))
-
-                Spacer()
-
-                Text("正解: \(gameManager.score)")
-                    .font(.system(size: 14, weight: .bold))
-                    .foregroundColor(.pink)
-            }
-            .padding(.horizontal, 20)
-            .padding(.top, 16)
-
-            // Progress bar
-            GeometryReader { geo in
-                ZStack(alignment: .leading) {
-                    RoundedRectangle(cornerRadius: 4)
-                        .fill(Color.white.opacity(0.15))
-                        .frame(height: 6)
-
-                    RoundedRectangle(cornerRadius: 4)
-                        .fill(
-                            LinearGradient(
-                                colors: [.pink, .purple],
-                                startPoint: .leading,
-                                endPoint: .trailing
-                            )
-                        )
-                        .frame(width: geo.size.width * gameManager.progress, height: 6)
-                        .animation(.easeInOut, value: gameManager.progress)
-                }
-            }
-            .frame(height: 6)
-            .padding(.horizontal, 20)
-            .padding(.top, 12)
-
-            // Character + speech bubble
-            HStack(alignment: .bottom, spacing: 12) {
-                Image(gameManager.currentCharacter.imageName)
-                    .resizable()
-                    .aspectRatio(contentMode: .fill)
-                    .frame(width: 70, height: 98)
-                    .clipShape(RoundedRectangle(cornerRadius: 10))
+        ScrollView {
+            VStack(spacing: 16) {
+                header
+                progressBar
+                characterRow
+                questionText
+                answers
 
                 if gameManager.isAnswered {
-                    let isCorrect = gameManager.selectedAnswer?.isCorrect ?? false
-                    Text(isCorrect
-                         ? gameManager.currentCharacter.correctResponse
-                         : gameManager.currentCharacter.wrongResponse)
-                        .font(.system(size: 13))
-                        .foregroundColor(.white.opacity(0.9))
-                        .padding(10)
-                        .background(
-                            RoundedRectangle(cornerRadius: 10)
-                                .fill(Color.white.opacity(0.1))
-                        )
-                        .transition(.opacity)
-                }
-
-                Spacer()
-            }
-            .padding(.horizontal, 20)
-            .padding(.top, 16)
-
-            // Question text
-            Text(question.text)
-                .font(.system(size: 18, weight: .semibold))
-                .foregroundColor(.white)
-                .multilineTextAlignment(.center)
-                .lineSpacing(4)
-                .padding(.horizontal, 24)
-                .padding(.vertical, 20)
-                .frame(maxWidth: .infinity)
-                .background(
-                    RoundedRectangle(cornerRadius: 16)
-                        .fill(Color.white.opacity(0.08))
-                )
-                .padding(.horizontal, 16)
-                .padding(.top, 16)
-
-            // Answer buttons
-            VStack(spacing: 12) {
-                ForEach(question.answers) { answer in
-                    AnswerButton(
-                        answer: answer,
-                        isSelected: gameManager.selectedAnswer?.id == answer.id,
-                        isAnswered: gameManager.isAnswered
-                    ) {
-                        withAnimation(.easeInOut(duration: 0.3)) {
-                            gameManager.selectAnswer(answer)
-                        }
-                    }
+                    nextButton
+                        .transition(.move(edge: .bottom).combined(with: .opacity))
                 }
             }
+            .frame(maxWidth: 720)
+            .frame(maxWidth: .infinity)
             .padding(.horizontal, 16)
-            .padding(.top, 20)
+            .padding(.top, 14)
+            .padding(.bottom, 24)
+        }
+        .scrollIndicators(.hidden)
+    }
+
+    private var header: some View {
+        HStack {
+            Button(action: { gameManager.goHome() }) {
+                Image(systemName: "xmark")
+                    .font(.title3)
+                    .foregroundColor(.white.opacity(0.75))
+                    .frame(width: 44, height: 44)
+                    .contentShape(Rectangle())
+            }
 
             Spacer()
 
-            // Next button
-            if gameManager.isAnswered {
-                Button(action: {
-                    withAnimation {
-                        gameManager.nextQuestion()
-                    }
-                }) {
-                    HStack {
-                        Text(gameManager.currentQuestionIndex + 1 >= gameManager.questions.count
-                             ? "結果を見る" : "次の問題")
-                            .font(.system(size: 16, weight: .bold))
+            Text("\(gameManager.currentQuestionIndex + 1) / \(gameManager.questions.count)")
+                .font(.system(size: 14, weight: .bold, design: .monospaced))
+                .foregroundColor(.white.opacity(0.84))
+                .lineLimit(1)
 
-                        Image(systemName: "arrow.right")
-                    }
-                    .foregroundColor(.white)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 14)
-                    .background(
+            Spacer()
+
+            Text("正解: \(gameManager.score)")
+                .font(.system(size: 14, weight: .bold))
+                .foregroundColor(.pink)
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
+                .frame(minWidth: 64, alignment: .trailing)
+        }
+    }
+
+    private var progressBar: some View {
+        GeometryReader { geo in
+            ZStack(alignment: .leading) {
+                RoundedRectangle(cornerRadius: 4)
+                    .fill(Color.white.opacity(0.15))
+                    .frame(height: 6)
+
+                RoundedRectangle(cornerRadius: 4)
+                    .fill(
                         LinearGradient(
                             colors: [.pink, .purple],
                             startPoint: .leading,
                             endPoint: .trailing
                         )
                     )
-                    .clipShape(RoundedRectangle(cornerRadius: 25))
-                    .shadow(color: .pink.opacity(0.4), radius: 6)
-                }
-                .padding(.horizontal, 24)
-                .padding(.bottom, 30)
-                .transition(.move(edge: .bottom).combined(with: .opacity))
+                    .frame(width: geo.size.width * gameManager.progress, height: 6)
+                    .animation(.easeInOut, value: gameManager.progress)
             }
         }
+        .frame(height: 6)
+    }
+
+    private var characterRow: some View {
+        HStack(alignment: .bottom, spacing: 12) {
+            Image(gameManager.currentCharacter.imageName)
+                .resizable()
+                .aspectRatio(contentMode: .fill)
+                .frame(width: 64, height: 90)
+                .clipShape(RoundedRectangle(cornerRadius: 10))
+
+            if gameManager.isAnswered {
+                let isCorrect = gameManager.selectedAnswer?.isCorrect ?? false
+                Text(isCorrect
+                     ? gameManager.currentCharacter.correctResponse
+                     : gameManager.currentCharacter.wrongResponse)
+                    .font(.system(size: 13))
+                    .foregroundColor(.white.opacity(0.92))
+                    .multilineTextAlignment(.leading)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(10)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(
+                        RoundedRectangle(cornerRadius: 10)
+                            .fill(Color.white.opacity(0.1))
+                    )
+                    .transition(.opacity)
+            } else {
+                Spacer(minLength: 0)
+            }
+        }
+    }
+
+    private var questionText: some View {
+        Text(question.text)
+            .font(.system(size: 18, weight: .semibold))
+            .foregroundColor(.white)
+            .multilineTextAlignment(.center)
+            .lineSpacing(4)
+            .fixedSize(horizontal: false, vertical: true)
+            .padding(.horizontal, 20)
+            .padding(.vertical, 18)
+            .frame(maxWidth: .infinity)
+            .background(
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(Color.white.opacity(0.08))
+            )
+    }
+
+    private var answers: some View {
+        VStack(spacing: 12) {
+            ForEach(question.answers) { answer in
+                AnswerButton(
+                    answer: answer,
+                    isSelected: gameManager.selectedAnswer?.id == answer.id,
+                    isAnswered: gameManager.isAnswered
+                ) {
+                    withAnimation(.easeInOut(duration: 0.3)) {
+                        gameManager.selectAnswer(answer)
+                    }
+                }
+            }
+        }
+    }
+
+    private var nextButton: some View {
+        Button(action: {
+            withAnimation {
+                gameManager.nextQuestion()
+            }
+        }) {
+            HStack {
+                Text(gameManager.currentQuestionIndex + 1 >= gameManager.questions.count
+                     ? "結果を見る" : "次の問題")
+                    .font(.system(size: 16, weight: .bold))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.85)
+
+                Image(systemName: "arrow.right")
+            }
+            .foregroundColor(.white)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 14)
+            .background(
+                LinearGradient(
+                    colors: [.pink, .purple],
+                    startPoint: .leading,
+                    endPoint: .trailing
+                )
+            )
+            .clipShape(RoundedRectangle(cornerRadius: 25))
+            .shadow(color: .pink.opacity(0.4), radius: 6)
+        }
+        .padding(.horizontal, 8)
     }
 }
 
@@ -216,17 +241,23 @@ struct AnswerButton: View {
 
     var body: some View {
         Button(action: onTap) {
-            HStack {
+            HStack(alignment: .center, spacing: 12) {
                 Text(answer.text)
                     .font(.system(size: 15, weight: .medium))
                     .foregroundColor(.white)
                     .multilineTextAlignment(.leading)
+                    .fixedSize(horizontal: false, vertical: true)
 
-                Spacer()
+                Spacer(minLength: 8)
 
                 if isAnswered {
-                    Image(systemName: answer.isCorrect ? "checkmark.circle.fill" : (isSelected ? "xmark.circle.fill" : ""))
-                        .foregroundColor(answer.isCorrect ? .green : .red)
+                    if answer.isCorrect {
+                        Image(systemName: "checkmark.circle.fill")
+                            .foregroundColor(.green)
+                    } else if isSelected {
+                        Image(systemName: "xmark.circle.fill")
+                            .foregroundColor(.red)
+                    }
                 }
             }
             .padding(.horizontal, 18)
@@ -239,6 +270,7 @@ struct AnswerButton: View {
                     .stroke(borderColor, lineWidth: isSelected ? 2 : 1)
             )
         }
+        .buttonStyle(.plain)
         .disabled(isAnswered)
     }
 

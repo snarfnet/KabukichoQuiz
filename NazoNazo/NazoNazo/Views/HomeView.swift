@@ -31,43 +31,50 @@ struct CharacterSelectView: View {
                 .ignoresSafeArea()
 
             ScrollView {
-            VStack(spacing: 0) {
-                Text("私のなぞなぞ")
-                    .font(.system(size: 32, weight: .black))
-                    .foregroundColor(.pink)
-                    .shadow(color: .pink.opacity(0.8), radius: 10)
+                VStack(spacing: 18) {
+                    VStack(spacing: 2) {
+                        Text("私のなぞなぞ")
+                            .font(.system(size: 30, weight: .black))
+                            .foregroundColor(.pink)
+                            .shadow(color: .pink.opacity(0.8), radius: 10)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.75)
 
-                Text("解けるかなぁ！？")
-                    .font(.system(size: 28, weight: .black))
-                    .foregroundColor(.purple)
-                    .shadow(color: .purple.opacity(0.8), radius: 10)
-                    .padding(.bottom, 30)
+                        Text("解けるかなぁ！？")
+                            .font(.system(size: 26, weight: .black))
+                            .foregroundColor(.purple)
+                            .shadow(color: .purple.opacity(0.8), radius: 10)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.75)
+                    }
 
-                Text("- 女の子を選んでね -")
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundColor(.white.opacity(0.7))
-                    .padding(.bottom, 20)
+                    Text("- キャラクターを選んでね -")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(.white.opacity(0.76))
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.8)
 
-                HStack(spacing: 16) {
-                    ForEach(GameCharacter.allCharacters) { character in
-                        CharacterCard(
-                            character: character,
-                            isUnlocked: gameManager.unlockedDifficulties.contains(character.difficulty),
-                            isSelected: selectedCharacter?.id == character.id
-                        ) {
-                            if gameManager.unlockedDifficulties.contains(character.difficulty) {
-                                selectedCharacter = character
-                                showGreeting = true
+                    LazyVGrid(columns: [GridItem(.adaptive(minimum: 104, maximum: 130), spacing: 14)], spacing: 16) {
+                        ForEach(GameCharacter.allCharacters) { character in
+                            CharacterCard(
+                                character: character,
+                                isUnlocked: gameManager.unlockedDifficulties.contains(character.difficulty),
+                                isSelected: selectedCharacter?.id == character.id
+                            ) {
+                                if gameManager.unlockedDifficulties.contains(character.difficulty) {
+                                    selectedCharacter = character
+                                    showGreeting = true
+                                }
                             }
                         }
                     }
+                    .padding(.horizontal, 16)
                 }
-                .padding(.horizontal, 16)
-
-                Spacer()
+                .frame(maxWidth: 520)
+                .frame(maxWidth: .infinity)
+                .padding(.top, 44)
+                .padding(.bottom, 32)
             }
-            .padding(.top, 60)
-            } // ScrollView
 
             if showGreeting, let character = selectedCharacter {
                 GreetingOverlay(character: character) {
@@ -122,6 +129,8 @@ struct CharacterCard: View {
                 Text(character.name)
                     .font(.system(size: 14, weight: .bold))
                     .foregroundColor(isUnlocked ? .white : .gray)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
 
                 Text(character.difficulty.displayName)
                     .font(.system(size: 11, weight: .medium))
@@ -160,7 +169,7 @@ struct GreetingOverlay: View {
                 Image(character.imageName)
                     .resizable()
                     .aspectRatio(contentMode: .fill)
-                    .frame(width: 150, height: 210)
+                    .frame(width: 132, height: 184)
                     .clipShape(RoundedRectangle(cornerRadius: 16))
                     .shadow(color: .pink.opacity(0.5), radius: 12)
 
@@ -172,7 +181,8 @@ struct GreetingOverlay: View {
                     .font(.system(size: 15))
                     .foregroundColor(.white.opacity(0.9))
                     .multilineTextAlignment(.center)
-                    .padding(.horizontal, 30)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.horizontal, 24)
 
                 Button(action: onStart) {
                     Text("クイズを始める")
@@ -193,7 +203,8 @@ struct GreetingOverlay: View {
                 .padding(.horizontal, 40)
             }
             .padding(.vertical, 30)
-            .frame(maxWidth: 320)
+            .frame(maxWidth: 330)
+            .padding(.horizontal, 18)
             .background(
                 RoundedRectangle(cornerRadius: 20)
                     .fill(Color(red: 0.1, green: 0.05, blue: 0.15).opacity(0.95))
