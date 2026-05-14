@@ -53,7 +53,7 @@ if data.get('data'):
     version_state = data['data'][0]['attributes']['appStoreState']
     print(f'Found version {APP_VERSION}: {version_id} state={version_state}')
 
-if version_state in ('WAITING_FOR_REVIEW', 'IN_REVIEW'):
+if version_state in ('IN_REVIEW',):
     print(f'Already in review ({version_state}). Nothing to do.')
     sys.exit(0)
 
@@ -111,7 +111,7 @@ print(f'Build assigned: {r.status_code}')
 
 # Cancel any blocking reviewSubmissions
 canceled_any = False
-for state_filter in ['UNRESOLVED_ISSUES', 'READY_FOR_REVIEW']:
+for state_filter in ['UNRESOLVED_ISSUES', 'READY_FOR_REVIEW', 'WAITING_FOR_REVIEW']:
     r = api('GET', f'/apps/{APP_ID}/reviewSubmissions?filter[state]={state_filter}')
     if r.status_code == 200:
         for sub in r.json().get('data', []):
